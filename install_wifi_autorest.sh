@@ -1,7 +1,7 @@
 #!/bin/bash
 cd /opt/scripts/tools/
 ./update_kernel.sh
-reboot
+#reboot
 cd ~
 ntpdate -b -s -u pool.ntp.org
 apt-get update && apt-get install git
