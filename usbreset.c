@@ -1,18 +1,39 @@
-#!/usr/bin/env python
-import os
-import sys
-from subprocess import Popen, PIPE
-import fcntl
-driver = sys.argv[-1]
-print "resetting driver:", driver
-USBDEVFS_RESET= 21780
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 
-try:
-    lsusb_out = Popen("lsusb | grep -i %s"%driver, shell=True, bufsize=64, stdin=PIPE, stdout=PIPE, close_fds=True).stdout.read().strip().split()
-        bus = lsusb_out[1]
-	device = lsusb_out[3][:-1]
-    f = open("/dev/bus/usb/%s/%s"%(bus, device), 'w', os.O_WRONLY)
-    fcntl.ioctl(f, USBDEVFS_RESET, 0)
-except Exception, msg:
-    print "failed to reset device:", msg
+#include <linux/usbdevice_fs.h>
+
+
+int main(int argc, char **argv)
+{
+    const char *filename;
+    int fd;
+    int rc;
+
+    if (argc != 2) {
+        fprintf(stderr, "Usage: usbreset device-filename\n");
+        return 1;
+    }
+    filename = argv[1];
+
+    fd = open(filename, O_WRONLY);
+    if (fd < 0) {
+        perror("Error opening output file");
+        return 1;
+    }
+
+    printf("Resetting USB device %s\n", filename);
+    rc = ioctl(fd, USBDEVFS_RESET, 0);
+    if (rc < 0) {
+        perror("Error in ioctl");
+        return 1;
+    }
+    printf("Reset successful\n");
+
+    close(fd);
+    return 0;
+}
 
