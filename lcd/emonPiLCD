@@ -18,7 +18,10 @@ DAEMON_NAME=emonPiLCD
 # This next line determines what user the script runs as.
 # Root generally not recommended but necessary if you are using the Raspberry Pi GPIO from Python.
 DAEMON_USER=root
- 
+
+EMONLCD_CONFIG="/home/debian/emonpi/lcd/emonPiLCD.conf"
+DAEMON_ARGS="--config-file $EMONLCD_CONFIG"
+
 # The process ID of the script when it runs is stored here:
 PIDFILE=/var/run/$DAEMON_NAME.pid
  
@@ -26,8 +29,8 @@ PIDFILE=/var/run/$DAEMON_NAME.pid
  
 do_start () {
     log_daemon_msg "Starting system $DAEMON_NAME daemon"
-    start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --user $DAEMON_USER --chuid $DAEMON_USER --startas /bin/bash -- -c "exec $DAEMON > /var/log/emonpilcd.log 2>&1"
-    log_end_msg $?
+
+    start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --user $DAEMON_USER --chuid $DAEMON_USER --startas /bin/bash -- -c "exec $DAEMON > /var/log/emonpilcd.log 2>&1" -- \ %DAEMON_ARGS \   log_end_msg $?
 }
 do_stop () {
     log_daemon_msg "Stopping system $DAEMON_NAME daemon"
