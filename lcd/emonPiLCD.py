@@ -37,12 +37,13 @@ parser.add_argument("--config-file", action="store",
 
 args = parser.parse_args()
 config_path = args.config_file
-print 'config path is ', config_path
+
 
 configfile = './emonPiLCD.conf'
 fullpath = '/home/debian/emonpi/lcd/emonPiLCD.conf'
 
 configs = ( )
+
 default = dict(
     emonPi_nodeID = 10,
     uselogfile = True,  
@@ -72,19 +73,16 @@ def read_config(filename):
     #configs = ConfigParser.ConfigParser()
     try:
         configs.read( filename)    #config_path)
-	print 'read configs from cmd path\n Configs from .conf file is    ', configs.get('emonPiLCD', 'FromConfig')
+
     except:
         #error reading accessing file
-	print 'error reading config file from cmd-line path'
 	err = 1
     if err ==1:
         try:
 	    configs.read(fullpath)
 	except:
 	    err = 2
-	    print 'error reading fullpath too'
 
-    #print configs.items('emonPiLCD')
 
 
 # -----------------------------
@@ -95,7 +93,7 @@ def get_config( str ):
     try:
         val = configs.get('emonPiLCD', str)
     except:
-        print 'no value nor default value, check name or add to default configuration'
+        #print 'no value nor default value, check name or add to default configuration'
         return None
 
     val = remove_comments( val )
@@ -111,19 +109,15 @@ def get_config( str ):
         val = True
     elif val == 'False' or val == 'false':
         val = False
-
-    #print val, type(val)
+    
     return val
 
 
 # -----------------------------
 # removes comments on line strings
-def remove_comments(strin):
-    a = strin.find(' ')
-    if a>0:
-        return strin[:a] 
-    else:
-        return strin
+def remove_comments(string):
+    arr = string.split()
+    return arr[0]
 
 
 # ################################################
@@ -137,7 +131,6 @@ configs = RawConfigParser(default, dict, True)      #print default.keys()
 # Load config file
 #read_config( configfile )
 read_config( config_path )
-
 
 
 # ------------------------------------------------------------------------------------
@@ -177,23 +170,24 @@ SHUTDOWN_TIME = get_config('SHUTDOWN_TIME')        #3  # Shutdown after 3 second
 import logging
 import logging.handlers
 # NOTE this is during pilots remove this in future or move to proper log management
-uselogfile = True    # >> conf
+uselogfile = get_config('uselogfile')		#True    # >> conf
 
 mqttc = False
 mqttConnected = False
 basedata = []
-mqtt_rx_channel =  "emonhub/rx/#"   #get_config('mqtt_rx_channel')   #"emonhub/rx/#"
-mqtt_push_channel = "emonhub/tx/#"    # >> conf
+mqtt_rx_channel = get_config('mqtt_rx_channel')     #"emonhub/rx/#"
+mqtt_push_channel = get_config('mqtt_push_channel')	#"emonhub/tx/#"    # >> conf
 
 if not uselogfile:
     loghandler = logging.StreamHandler()
 else:
-    loghandler = logging.handlers.RotatingFileHandler("/var/log/emonPiLCD",'a', 5000 * 1024, 1)    # >> conf
+    loghandler = logging.handlers.RotatingFileHandler(get_config('loghandler_path'),'a', 5000 * 1024, 1)    # >> from config
+
 
 loghandler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 logger = logging.getLogger("emonPiLCD")
 logger.addHandler(loghandler)
-logger.setLevel(logging.INFO)    # >> conf
+logger.setLevel(logging.INFO)    # >> config??
 
 logger.info("emonPiLCD Start")
 
@@ -461,7 +455,6 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split("/")
-    logger.info("MQTT RX: "+msg.topic+" "+msg.payload)
     if int(topic_parts[2])==emonPi_nodeID:
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)
