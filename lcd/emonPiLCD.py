@@ -17,35 +17,152 @@ import re
 import paho.mqtt.client as mqtt
 
 
+# ------------------------------------------------- 
+#     Config File reader
+# config file emonPiLCD.conf
+
+import ConfigParser
+from ConfigParser import RawConfigParser
+import re
+
+# parser
+
+import argparse
+
+parser = argparse.ArgumentParser(description='config file')
+
+parser.add_argument("--config-file", action="store", 
+		     help="path to config file", 
+                      default=sys.path[0] +'/emonPiLCD.conf')
+
+args = parser.parse_args()
+config_path = args.config_file
+
+
+configfile = './emonPiLCD.conf'
+fullpath = '/home/debian/emonpi/lcd/emonPiLCD.conf'
+
+configs = ( )
+
+default = dict(
+    emonPi_nodeID = 10,
+    uselogfile = True,  
+    mqtt_rx_channel = 'emonhub/rx/#',
+    mqtt_push_channel = 'emonhub/tx/#',
+    loghandler_path = '/var/log/emonPiLCD',
+    #logger_level = logging.INFO,
+
+    backlight_timeout = 180,
+    SHUTDOWN_TIME = 3,
+    GPIO_PORT = 'P8_11',
+    GPIO_PORT_shutdown = 'P8_12',
+    max_number_pages = 6,
+
+    host = 'localhost',
+    port = 6379,
+    db = 0,
+    FromConfig = False
+)
+
+# -----------------------------
+#   loads config values from config file
+def read_config(filename):
+    global configs
+    err = 0
+    
+    #configs = ConfigParser.ConfigParser()
+    try:
+        configs.read( filename)    #config_path)
+
+    except:
+        #error reading accessing file
+	err = 1
+    if err ==1:
+        try:
+	    configs.read(fullpath)
+	except:
+	    err = 2
+
+
+
+# -----------------------------
+#   loads variable value from config
+def get_config( str ):
+    global configs
+
+    try:
+        val = configs.get('emonPiLCD', str)
+    except:
+        #print 'no value nor default value, check name or add to default configuration'
+        return None
+
+    val = remove_comments( val )
+    try:
+        integer =  int(val)
+    except:
+        #print error
+        integer = val
+    
+    val = integer
+
+    if val == 'True' or val == 'true':
+        val = True
+    elif val == 'False' or val == 'false':
+        val = False
+    
+    return val
+
+
+# -----------------------------
+# removes comments on line strings
+def remove_comments(string):
+    arr = string.split()
+    return arr[0]
+
+
+# ################################################
+#
+# ------------------- Config
+#
+
+# Load defaults
+configs = RawConfigParser(default, dict, True)      #print default.keys()
+
+# Load config file
+#read_config( configfile )
+read_config( config_path )
+
+
 # ------------------------------------------------------------------------------------
 # LCD backlight timeout in seconds
 # 0: always on
 # 300: off after 5 min
 # ------------------------------------------------------------------------------------
-backlight_timeout = 180
+backlight_timeout = get_config('backlight_timeout')    #180
 
 # ------------------------------------------------------------------------------------
 # emonPi Node ID (default 5)
 # ------------------------------------------------------------------------------------
-emonPi_nodeID = 10
+emonPi_nodeID = get_config('emonPi_nodeID')    #10
+
 lcd = lcddriver.lcd()
 
 
 # Default Startup Page
 page = 0
 inc = 0
-GPIO_PORT = "P8_11"
+GPIO_PORT = get_config('GPIO_PORT')    #"P8_11"
 
 #in case we use a button to switch on/off
-GPIO_PORT_shutdown = "P8_12"
+GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"  
 GPIO.setup( GPIO_PORT,GPIO.IN)
 GPIO.setup( GPIO_PORT_shutdown,GPIO.IN)
 new_switch_state = GPIO.input(GPIO_PORT)
 shutdown_button =GPIO.input(GPIO_PORT_shutdown)
 
-max_number_pages = 6
+max_number_pages = get_config('max_number_pages')  #6
 
-SHUTDOWN_TIME =3  # Shutdown after 3 second press
+SHUTDOWN_TIME = get_config('SHUTDOWN_TIME')        #3  # Shutdown after 3 second press
 
 # ------------------------------------------------------------------------------------
 # Start Logging
@@ -53,29 +170,31 @@ SHUTDOWN_TIME =3  # Shutdown after 3 second press
 import logging
 import logging.handlers
 # NOTE this is during pilots remove this in future or move to proper log management
-uselogfile = True
+uselogfile = get_config('uselogfile')		#True    # >> conf
 
 mqttc = False
 mqttConnected = False
 basedata = []
-mqtt_rx_channel = "emonhub/rx/#"
-mqtt_push_channel = "emonhub/tx/#"
+mqtt_rx_channel = get_config('mqtt_rx_channel')     #"emonhub/rx/#"
+mqtt_push_channel = get_config('mqtt_push_channel')	#"emonhub/tx/#"    # >> conf
 
 if not uselogfile:
     loghandler = logging.StreamHandler()
 else:
-    loghandler = logging.handlers.RotatingFileHandler("/var/log/emonPiLCD",'a', 5000 * 1024, 1)
+    loghandler = logging.handlers.RotatingFileHandler(get_config('loghandler_path'),'a', 5000 * 1024, 1)    # >> from config
+
 
 loghandler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 logger = logging.getLogger("emonPiLCD")
 logger.addHandler(loghandler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.INFO)    # >> config??
 
 logger.info("emonPiLCD Start")
 
 # ------------------------------------------------------------------------------------
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') ) 
+# host='localhost', port=6379, db=0)
 
 # We wait here until redis has successfully started up
 redisready = False
@@ -336,7 +455,6 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split("/")
-    logger.info("MQTT RX: "+msg.topic+" "+msg.payload)
     if int(topic_parts[2])==emonPi_nodeID:
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)
