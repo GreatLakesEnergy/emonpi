@@ -10,8 +10,8 @@ sudo apt-get autoremove -y
 sudo apt-get clean
 
 echo "Set hostname to emonpi"
-sudo sed -i 's/beaglebone/emonpi/g' /etc/hosts
-sudo sed -i 's/beaglebone/emonpi/g' /etc/hostname
+sudo sed -i 's/beaglebone/RMC/g' /etc/hosts
+sudo sed -i 's/beaglebone/RMC/g' /etc/hostname
 
 
 #echo "enable serial uploads with avrdue and autoreset & install minicom & enable use of serial port"
@@ -32,11 +32,21 @@ sudo sed -i 's/beaglebone/emonpi/g' /etc/hostname
 echo "install LCD"
 sudo /home/debian/emonpi/lcd/install
 echo "install wifi dongle"
-sudo /home/debian/emonpi/install_wifi_autoreset
+chmod +x /home/debian/emonpi/install_wifi_autoreset.sh
+sudo /home/debian/emonpi/install_wifi_autoreset.sh
 
 echo "move /etc/resolv.conf to RW data partition to allow updating of DNS nameservers"
 # create sim link of resolv.conf and resolv.conf.dhclient-new in RW /data to /etc
 cp /etc/resolv.conf /home/debian/data/
+systemctl disable bonescript.service              
+systemctl disable bonescript.socket
+systemctl disable bonescript-autorun.service
+systemctl disable cloud9.service                  
+systemctl disable gateone.service                 
+systemctl disable bonescript.service              
+systemctl disable bonescript-autorun.service      
+systemctl disable avahi-daemon.service            
+systemctl disable gdm.service     # this disables the Gnome desktop which is maybe irrelevant here, but saves a ton of memory
 #sudo rm /etc/resolv.conf 
 #sudo ln -s /home/debian/data/resolv.conf /etc/resolv.conf
 
