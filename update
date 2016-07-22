@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ ! -f /tmp/emonpiupdate ]; then
-    exit
-fi
+#if [ ! -f /tmp/emonpiupdate ]; then
+#    exit
+#fi
 
 LOCK=/tmp/updatelock
 if [ -f $LOCK ]; then
@@ -11,19 +11,19 @@ if [ -f $LOCK ]; then
 fi
 touch $LOCK
 
-rpi-rw
+#rpi-rw
 
 cat /dev/null >  /var/log/emonpiupdate.log 
 
 cd /home/debian/emonpi
-git checkout master
-git pull origin master
+git checkout beaglebone
+git pull origin beaglebone
 
 /home/debian/emonpi/emonpiupdate
-/home/debian/emonpi/emoncmsupdate
+#/home/debian/emonpi/emoncmsupdate
 
 sudo rm /tmp/emonpiupdate
 
-rpi-ro
+#rpi-ro
 
 rm $LOCK
