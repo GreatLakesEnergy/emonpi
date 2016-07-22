@@ -20,7 +20,7 @@ git checkout beaglebone
 git pull origin beaglebone
 
 /home/debian/emonpi/emonpiupdate
-#/home/debian/emonpi/emoncmsupdate
+/home/debian/emonpi/emoncmsupdate
 
 sudo rm /tmp/emonpiupdate
 
