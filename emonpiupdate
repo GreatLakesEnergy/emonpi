@@ -10,7 +10,7 @@ sudo service emonPiLCD stop
 echo "Start ATmega328 serial upload using avrdude with emonPi_latest.hex"
 
 # emonPi ATmega328 update
-vrdude -v -c arduino -p ATMEGA328P -P /dev/ttyO2 -b 115200  -U flash:w:/home/debian/emonpi/Atmega328/emonPi_RFM69CW_RF12Demo_DiscreteSampling/emonPi_RFM69CW_RF12Demo_DiscreteSampling.cpp.hex
+avrdude -v -c arduino -p ATMEGA328P -P /dev/ttyO2 -b 115200  -U flash:w:/home/debian/emonpi/Atmega328/emonPi_RFM69CW_RF12Demo_DiscreteSampling/emonPi_RFM69CW_RF12Demo_DiscreteSampling.cpp.hex
 
 sudo service emonhub start
 sudo service emonPiLCD start

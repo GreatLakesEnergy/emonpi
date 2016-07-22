@@ -25,7 +25,8 @@ echo
 #git pull origin master
 
 cd /home/debian/emonhub
-git pull origin emon-pi
+git config --global http.sslverify false
+git pull origin beaglebone
 
 sudo service emonhub restart
 #sudo service emoncms-nodes-service restart
