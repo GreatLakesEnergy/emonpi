@@ -6,7 +6,9 @@ class ConfigDownloader:
     def __init__(self, config_path, remote_url):
         self.config_path = config_path
         self.remote_url  = remote_url
-        self.api_key      = uuid.uuid4()
+        self.api_key     = uuid.uuid4()
+        self.error       = None
+        self.response    = None
 
     def run(self):
         print "Setting up a new account"
@@ -15,17 +17,22 @@ class ConfigDownloader:
         if ready != "":
             print "aborting..."
             exit()
-        self.download()
-        if self.response.status_code == requests.codes.ok:
+        if self.download():
             print "writing config file to: " + self.config_path
             self.save()
             print "done."
         else:
-            print "dowload failed with status: %s" % self.response.status_code
+            print "dowload failed:"
+            print self.response
+            print self.error
 
     def download(self):
-        self.response = requests.get(self.remote_url, headers={'X-Api-Key': self.api_key})
-        return self.response
+        try:
+          self.response = requests.get(self.remote_url, headers={'X-Api-Key': self.api_key})
+          return self.response.status_code == requests.codes.ok
+        except Exception as e:
+          self.error = e
+          return False
 
     def save(self):
         f = open(self.config_path,"w")
