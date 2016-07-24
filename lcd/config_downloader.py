@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import uuid
 import requests
+import codecs
 
 class ConfigDownloader:
     def __init__(self, config_path, remote_url):
@@ -19,8 +20,11 @@ class ConfigDownloader:
             exit()
         if self.download():
             print "writing config file to: " + self.config_path
-            self.save()
-            print "done."
+            if self.save():
+                print "done."
+            else:
+                print "error writing file:"
+                print self.error
         else:
             print "dowload failed:"
             print self.response
@@ -35,9 +39,14 @@ class ConfigDownloader:
           return False
 
     def save(self):
-        f = open(self.config_path,"w")
-        f.write(self.response.text)
-        f.close()
+        try:
+            f = codecs.open(self.config_path, "w", encoding='utf8')
+            f.write(self.response.text)
+            f.close()
+            return True
+        except Exception as e:
+            self.error = e
+            return False
 
 
 if __name__ == '__main__':
