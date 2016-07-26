@@ -17,7 +17,7 @@ import re
 import paho.mqtt.client as mqtt
 
 
-# ------------------------------------------------- 
+# -------------------------------------------------
 #     Config File reader
 # config file emonPiLCD.conf
 
@@ -31,8 +31,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='config file')
 
-parser.add_argument("--config-file", action="store", 
-		     help="path to config file", 
+parser.add_argument("--config-file", action="store",
+		     help="path to config file",
                       default=sys.path[0] +'/emonPiLCD.conf')
 
 args = parser.parse_args()
@@ -46,7 +46,7 @@ configs = ( )
 
 default = dict(
     emonPi_nodeID = 10,
-    uselogfile = True,  
+    uselogfile = True,
     mqtt_rx_channel = 'emonhub/rx/#',
     mqtt_push_channel = 'emonhub/tx/#',
     loghandler_path = '/var/log/emonPiLCD',
@@ -69,7 +69,7 @@ default = dict(
 def read_config(filename):
     global configs
     err = 0
-    
+
     #configs = ConfigParser.ConfigParser()
     try:
         configs.read( filename)    #config_path)
@@ -101,12 +101,12 @@ def get_config( str ):
         val =  int(val)
     except:
 	pass
-    
+
     if val == 'True' or val == 'true':
         val = True
     elif val == 'False' or val == 'false':
         val = False
-    
+
     return val
 
 
@@ -116,7 +116,7 @@ def remove_comments(string):
     try:
 	    string = string.split()
     except:
-            string = [string] 
+            string = [string]
             pass
     return string[0]
 
@@ -155,7 +155,7 @@ inc = 0
 GPIO_PORT = get_config('GPIO_PORT')    #"P8_11"
 
 #in case we use a button to switch on/off
-GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"  
+GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"
 GPIO.setup( GPIO_PORT,GPIO.IN)
 GPIO.setup( GPIO_PORT_shutdown,GPIO.IN)
 new_switch_state = GPIO.input(GPIO_PORT)
@@ -194,7 +194,7 @@ logger.info("emonPiLCD Start")
 
 # ------------------------------------------------------------------------------------
 
-r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') ) 
+r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') )
 # host='localhost', port=6379, db=0)
 
 # We wait here until redis has successfully started up
@@ -352,7 +352,7 @@ class Background(threading.Thread):
 			logger.info("background: wlan "+str(signallevel))
 
 			gsm_signallevel = 0
-		
+
 		    if (now - last5h) >= 18000.0:
 			last5h = now
 			if pppactive:
@@ -428,16 +428,16 @@ def shutdown():
 
 def restart_ethernet():
 	"""
- 	Intiate thernet restart. TODO: move this to monit	
+ 	Intiate thernet restart. TODO: move this to monit
 	"""
 	if_down = "ifdown eth0"
 	if_up = "ifup eth0"
 
-	logger.debug("Trying to  restart ethernet")			
+	logger.debug("Trying to  restart ethernet")
 	p = Popen(if_down, shell=True, stdout=PIPE)
 	ppp0ip = p.communicate()[0][:-1]
 	time.sleep(10)
-	logger.debug("Trying to renable ethernet")			
+	logger.debug("Trying to renable ethernet")
 	p = Popen(if_up, shell=True, stdout=PIPE)
 	ppp0ip = p.communicate()[0][:-1]
 
@@ -665,7 +665,7 @@ while 1:
              #   print"********************power 4:......
 
         elif page==7:
-            tx = r.get("server:active")
+            tx = int(r.get("server:active"))
 
             if tx is not 0:
                 lcd_string1 = 'Server Com.  '
