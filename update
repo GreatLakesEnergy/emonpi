@@ -17,8 +17,7 @@ cat /dev/null >  /var/log/emonpiupdate.log
 
 cd /home/debian/emonpi
 git config --global http.sslverify false
-git checkout beaglebone
-git pull origin beaglebone
+git pull origin RELEASE
 
 /home/debian/emonpi/emonpiupdate
 /home/debian/emonpi/emoncmsupdate
