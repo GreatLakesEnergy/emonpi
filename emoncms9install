@@ -10,7 +10,7 @@
 # Install all dependencies
 # There are a few extra things in here such as mosquitto
 # which will become useful soon
-BRANCH="beaglebone"
+BRANCH="RELEASE"
 
 # MYSQL INSTALL WITHOUT PASSWORD PROMPT
 echo "MYSQL INSTALL WITHOUT PASSWORD PROMPT"

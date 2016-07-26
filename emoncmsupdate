@@ -26,7 +26,7 @@ echo
 
 cd /home/debian/emonhub
 git config --global http.sslverify false
-git pull origin beaglebone
+git pull origin RELEASE
 
 sudo service emonhub restart
 #sudo service emoncms-nodes-service restart
