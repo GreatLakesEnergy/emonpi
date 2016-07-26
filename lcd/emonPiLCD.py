@@ -476,6 +476,7 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split("/")
+    logger.info("MQTT RX: "+msg.topic+" "+msg.payload)
     if int(topic_parts[2])==emonPi_nodeID:
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)

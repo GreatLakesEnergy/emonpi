@@ -13,7 +13,7 @@
   Authors: Glyn Hudson & Trystan Lea 
   Builds upon JCW JeeLabs RF12 library and Arduino 
   
-  Licence: GNU GPL V3
+  Licence: GNU GPL V3h
 
 */
 
@@ -45,7 +45,13 @@ https://github.com/openenergymonitor/emonpi/blob/master/Atmega328/emonPi_RFM69CW
 ISR(WDT_vect) { Sleepy::watchdogEvent(); }                            // Attached JeeLib sleep function to Atmega328 watchdog -enables MCU to be put into sleep mode inbetween readings to reduce power consumption 
 
 #include "EmonLib.h"                                                  // Include EmonLib energy monitoring library https://github.com/openenergymonitor/EmonLib
-EnergyMonitor ct1, ct2, ct3, ct4;      
+EnergyMonitor ct1, ct2, ct3, ct4; 
+
+// -------------------------------------- Hall Sensor for DC current measuring
+#include "HallSensor.h"
+HallSensor dc_hall;
+int HALL_SENSOR_PIN;
+float HALL_VREF, HALL_OFFSET;
 
 #include <OneWire.h>                                                  // http://www.pjrc.com/teensy/td_libs_OneWire.html
 #include <DallasTemperature.h>                                        // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_LATEST.zip
@@ -126,6 +132,7 @@ uint32_t networkGroup = 3421749817;    //numeric value from ansible rmc_key
     //int str_len = api.length() + 1;     // Length (with one extra character for the null terminator)
    // int networkGroup = 0; 
 
+float FF;
 
 typedef struct { 
 int power1;
@@ -135,6 +142,7 @@ int power4;
 //int power1_plus_2;
 //**************************************for DC voltage reading************* 
 int v_battery_bank;  
+int DC_current;
 //*************************************************************************                                                 
 int Vrms; 
 int temp[MaxOnewire]; 
@@ -268,10 +276,27 @@ void setup()
   delay(1500);  
   CT_Detect();
   serial_print_startup();
-
+  
+  /*
+   *   DC current hall sensor ---- SETUP
+   *    ---------------------------------------------------
+   *    
+   *    - give precise voltage of 3.3V Ref on emonhubTx
+   *    - Hall Offset variable is for calibrating other sensors towards 
+   *      the * reference sensor. Offset seems to be mostly linear compared to other sensors
+   *    - Debugging boolean turns on serial debugging messages of adc value, voltage 
+   *      and current translation over serial. This confuses BBB
+   */
+  HALL_VREF = 3.311;                // Precise voltage reference for ADC
+  HALL_OFFSET = 0;                  
+  dc_hall.DEBUGGING = 0;            // Boolean for printing Debugging info
+  dc_hall.Initialise(HALL_VREF, HALL_OFFSET);   // setup hall sensor measurement variables
+  HALL_SENSOR_PIN = 5;        // define hall sensor pin
+  
+  
   attachInterrupt(emonPi_int1, onPulse, FALLING);  // Attach pulse counting interrupt on RJ45 (Dig 3 / INT 1) 
   emonPi.pulseCount = 0;                                                  // Reset Pulse Count 
-  for(byte j=0;j<MaxOnewire;j++) 
+  for(byte j=0;j<MaxOnewire;j++)  // ???????????? empty for?
  //     emontx.temp[j] = 3000;                             // If no temp sensors connected default to status code 3000 
                                                          // will appear as 300 once multipled by 0.1 in emonhub
    
@@ -286,7 +311,6 @@ void setup()
     ct2.voltage(0, Vcal, phase_shift);                       // ADC pin, Calibration, phase_shift
     ct3.voltage(0, Vcal, phase_shift);          // ADC pin, Calibration, phase_shift
     ct4.voltage(0, Vcal, phase_shift);          // ADC pin, Calibration, phase_shift
-    
   }
  
 } //end setup
@@ -303,9 +327,9 @@ void loop()
    delay(100);
    vout = (battery_value * 5) / 1024.0;     //change A/D value into voltage = analogread *5/1024  so the reading of 1 for the A/D = 0.0048mVA 
    vin_new=vout/(R2/(R1+R2));
-
+  
   unsigned long currentMillis = millis();
-  if(currentMillis - previousMillis >= interval) 
+  if(currentMillis - previousMillis >= interval)  // interval = 2000
   {
     previousMillis = currentMillis;     
     previous_reading = analogRead(v_battery_pin);
@@ -325,7 +349,7 @@ void loop()
   }
 
   
-/*
+  /*
   
    if (vin>0.09)  //v is the minimum voltage; 43 is the max
    {
@@ -344,8 +368,8 @@ void loop()
     */
       
   
-//***********************************************************************************************
-//**********************************************************************
+  //***********************************************************************************************
+  //**********************************************************************
    
    // unsigned long start = millis();
   now = millis();
@@ -387,16 +411,19 @@ void loop()
     send_RF();                                                                    // Transmitt data packets if needed 
   }
 
- 
-  if ((now - last_sample) > TIME_BETWEEN_READINGS)
+  // got NOW in this loop,
+  // got LAST SAMPLE at end of last 5s frame
+  if ((now - last_sample) > TIME_BETWEEN_READINGS)  // TIME BETWEEN R = 5000 ms
   {
     single_LED_flash();                                                            // single flash of LED on local CT sample
+
     
     if (ACAC)                                                                      // Read from CT 1
     {
      // delay(200);                         //if powering from AC-AC allow time for power supply to settle    
      // emontx.Vrms=0;                      //Set Vrms to zero, this will be overwirtten by CT 1-4
-      ct1.calcVI(no_of_half_wavelengths,timeout); emonPi.power1=ct1.realPower;
+      ct1.calcVI(no_of_half_wavelengths,timeout); 
+      emonPi.power1=ct1.realPower;
       emonPi.Vrms=ct1.Vrms*100;
     
     }
@@ -451,8 +478,27 @@ void loop()
 
    emonPi.v_battery_bank=vin;
 
+  // ######################   HALL  SENSOR  #########
+  // #   Read Hall Sensor for DC battery current
+  //
+  FF = dc_hall.get_current( );
+  emonPi.DC_current = int(FF * 100);
 
-   
+  if(dc_hall.DEBUGGING)
+  {
+    Serial.print("\nF,  ");
+    Serial.print(FF);
+    Serial.print("\tint,  ");
+    Serial.println( int(FF*100) );
+  }
+  
+  /* if(dc_hall.DEBUGGING == 1){
+    Serial.println("========== DEBUG\nDC Hall current reading is");
+    Serial.println(FF);
+    Serial.println(FF*100);
+    Serial.println( int(FF) );
+  }   */
+  
   //Serial.print(emonPi.pulseCount); Serial.print(" ");delay(5);
    // if (debug==1) {Serial.print(emonPi.power2); Serial.print(" ");delay(5);}  
     if (!ACAC){                                                                         // read battery voltage if powered by DC
