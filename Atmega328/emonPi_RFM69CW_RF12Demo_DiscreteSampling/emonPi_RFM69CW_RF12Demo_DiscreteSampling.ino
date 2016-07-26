@@ -50,7 +50,7 @@ EnergyMonitor ct1, ct2, ct3, ct4;
 // -------------------------------------- Hall Sensor for DC current measuring
 #include "HallSensor.h"
 HallSensor dc_hall;
-int hall_sensor_pin;
+int HALL_SENSOR_PIN;
 float HALL_VREF, HALL_OFFSET;
 
 #include <OneWire.h>                                                  // http://www.pjrc.com/teensy/td_libs_OneWire.html
@@ -290,8 +290,8 @@ void setup()
   HALL_VREF = 3.311;                // Precise voltage reference for ADC
   HALL_OFFSET = 0;                  
   dc_hall.DEBUGGING = 0;            // Boolean for printing Debugging info
-  dc_hall.Initialise(HALL_VREF);   // setup hall sensor measurement variables
-  hall_sensor_pin = 5;        // define hall sensor pin
+  dc_hall.Initialise(HALL_VREF, HALL_OFFSET);   // setup hall sensor measurement variables
+  HALL_SENSOR_PIN = 5;        // define hall sensor pin
   
   
   attachInterrupt(emonPi_int1, onPulse, FALLING);  // Attach pulse counting interrupt on RJ45 (Dig 3 / INT 1) 
@@ -481,7 +481,7 @@ void loop()
   // ######################   HALL  SENSOR  #########
   // #   Read Hall Sensor for DC battery current
   //
-  FF = dc_hall.get_current(hall_sensor_pin, HALL_OFFSET );
+  FF = dc_hall.get_current( );
   emonPi.DC_current = int(FF * 100);
 
   if(dc_hall.DEBUGGING)

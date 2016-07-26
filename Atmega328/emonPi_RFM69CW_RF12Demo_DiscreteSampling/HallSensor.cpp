@@ -27,12 +27,13 @@
  *    
  */
 
-void HallSensor::Initialise( float in_VREF ){
+void HallSensor::Initialise( float in_VREF, float in_VOFFSET ){
   
   analogReference(DEFAULT);   // EXTERNAL
    
   VREF = in_VREF;   //3.283;
-    
+  VOFFSET = in_VOFFSET;
+  
   Readings = 3;   
   readingDelay = 100;
   
@@ -78,15 +79,14 @@ void HallSensor::Set( int in_Readings, int  in_readingDelay, int in_SampleSize, 
  *  Each reading followed by a delay of _readingDelay ms
  *  
  */
-float HallSensor::get_current( int PIN, float offset_adjust ) 
+float HallSensor::get_current(  ) 
 {
-  float readings[5];
   float result = 0;
   
   // Take X  Readings
   for( int i=0; i< Readings; i++)
   {
-    result += get_reading( PIN);
+    result += get_reading( );
     // Alternatively put value into array to find Mean or middle value
     //readings[i] = get_reading( PIN);
     //result += readings[i]
@@ -96,7 +96,7 @@ float HallSensor::get_current( int PIN, float offset_adjust )
 
   result /= Readings;
   
-  CurrentReading = result +offset_adjust;
+  CurrentReading = result +VOFFSET;
 
   return CurrentReading;
   
@@ -108,55 +108,44 @@ float HallSensor::get_current( int PIN, float offset_adjust )
 // tkaes SampleSize, Separate (delay between readings)
 // returns:   average over all adc values
 //
-float HallSensor::get_reading( int PIN )
+float HallSensor::get_reading( )
 {
   int sensor;
   int sample_no = 0;
   float average = 0;
-  float voltage, current;
   
-  reading_begin = millis();
+  time_for_reading = millis();
   
   while(sample_no < SampleSize)
   {
-      switch(PIN){
-        case 0:
-          sensor = analogRead(A0);
-          break;
-        case 1:
-          sensor = analogRead(A1);
-          break;
-        case 2:
-          sensor = analogRead(A2);
-          break;
-        case 3:
-          sensor = analogRead(A3);
-          break;
-        case 4:
-          sensor = analogRead(A4);
-          break;
-        case 5:
-          sensor = analogRead(A5);
-          break;
-        default:
-          sensor = analogRead(A0);
-          break;
-      }
-
+      // ---------------------
+      sensor = analogRead(A5);
+      
       average += sensor;
       
       sample_no++;
       
       delay(readingSeparation);
   } // Eo while loop
+  
+  
+  time_for_reading = ( millis() - time_for_reading);
+  
+  if(DEBUGGING){
+    Serial.print("time for reading \t");      Serial.println(time_for_reading);     }
+  
+  // calc average
+  average /= SampleSize;
+  if(DEBUGGING){
+    Serial.print("avrg\t");      Serial.println(average);     }
+
+  //  calc equiv voltage
+  average = get_volt(average);
+  if(DEBUGGING){
+    Serial.print("volt\t");      Serial.println(average);     }
 
   
-  time_for_reading = reading_begin - millis();
-  
-  average /= SampleSize;
-  voltage = get_volt(average);
-  
-  /*  -------------  Current to voltage curves for curent sensor -------------
+   /*  -------------  Current to voltage curves for curent sensor -------------
    *  
    *  Equ for G 0, Z 0,     =  (168.05 * v1 ) -400.22;
    *  Equ for G 1, Z 1      = (140.74 * v2 ) -365.82;
@@ -166,22 +155,11 @@ float HallSensor::get_reading( int PIN )
    *  1 is turned all the way anti-clockwise
    *  
    */
-  
-  current = ( 140.74 * voltage ) -365.82;
-
-  // ======================= DEBUG O P 
+  average = ( 140.74 * average ) -365.82;
   if(DEBUGGING){
-    
-    Serial.println("======================= DEBUG ");
-    Serial.println("time\tavrg adc\t> volt\t >>curr");
-    Serial.println( time_for_reading);
-    Serial.println(average);
-    Serial.println(voltage);
-    Serial.println(current);
-    
-  } 
+    Serial.print("curr\t");      Serial.println(average);     }
   
-  return current;
+  return average;
 } // Eo get_reading
 
 
