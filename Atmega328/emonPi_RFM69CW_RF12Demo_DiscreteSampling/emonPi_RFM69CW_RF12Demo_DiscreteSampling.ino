@@ -281,7 +281,11 @@ void setup()
    *   DC current hall sensor ---- SETUP
    *    ---------------------------------------------------
    *    
-   *    give precise voltage of 3.3V Ref on emonhubTx
+   *    - give precise voltage of 3.3V Ref on emonhubTx
+   *    - Hall Offset variable is for calibrating other sensors towards 
+   *      the * reference sensor. Offset seems to be mostly linear compared to other sensors
+   *    - Debugging boolean turns on serial debugging messages of adc value, voltage 
+   *      and current translation over serial. This confuses BBB
    */
   HALL_VREF = 3.311;                // Precise voltage reference for ADC
   HALL_OFFSET = 0;                  
