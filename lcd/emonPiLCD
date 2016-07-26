@@ -19,7 +19,7 @@ DAEMON_NAME=emonPiLCD
 # Root generally not recommended but necessary if you are using the Raspberry Pi GPIO from Python.
 DAEMON_USER=root
 
-EMONLCD_CONFIG="/home/debian/emonpi/lcd/emonPiLCD.conf"
+# EMONLCD_CONFIG="/home/debian/emonpi/lcd/emonPiLCD.conf"
 DAEMON_ARGS="--config-file $EMONLCD_CONFIG"
 
 # The process ID of the script when it runs is stored here:
