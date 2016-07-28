@@ -1,6 +1,8 @@
+#!/usr/bin/python
 import time
 import serial
 import subprocess
+import sys
 starttime=time.time()
 #previous_signal=0
 
@@ -55,9 +57,14 @@ def switch_off_gsm():
    ser.write(cmd.encode())
 
 if __name__ == '__main__':
-        gprs=get_gsm_signal_strength()
-        previous_signal=gprs
-        #print gprs
-        #print "previous signal:",previous_signal
-        print "current signal: ",gprs, "%"
+	if len(sys.argv) > 1:
+		if sys.argv[1] == 'reboot':
+			print "Shutting down modem"
+			switch_off_gsm()
+	else:
+		gprs=get_gsm_signal_strength()
+		previous_signal=gprs
+		print gprs
+		print "previous signal:",previous_signal
+		print "current signal: ",gprs, "%"
 
