@@ -45,7 +45,7 @@ fullpath = '/home/debian/emonpi/lcd/emonPiLCD.conf'
 configs = ( )
 
 default = dict(
-    emonPi_nodeID = 10,
+    emonPi_nodeID = 5,
     uselogfile = True,
     mqtt_rx_channel = 'emonhub/rx/#',
     mqtt_push_channel = 'emonhub/tx/#',
