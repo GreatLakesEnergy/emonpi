@@ -223,6 +223,8 @@ class Background(threading.Thread):
 	r.set("server:active", 0)
 	r.set("wlan:active", 0)
 	r.set("eth:active", 0)
+	r.set("ppp:active", 0)
+	r.set("ppp:gsm_signallevel",0)
 
     def run(self):
         last1s = time.time() - 2.0
@@ -589,7 +591,7 @@ while 1:
                 lcd_string1 = "Ethernet: YES"
                 lcd_string2 = r.get("eth:ip")
             else:
-                if r.get("wlan:active"):
+                if int(r.get("wlan:active")):
                         page=page+1
                 else:
                         lcd_string1 = "Ethernet:"
