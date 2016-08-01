@@ -10,7 +10,7 @@
 # Install all dependencies
 # There are a few extra things in here such as mosquitto
 # which will become useful soon
-BRANCH="beaglebone"
+BRANCH="RELEASE"
 
 # MYSQL INSTALL WITHOUT PASSWORD PROMPT
 echo "MYSQL INSTALL WITHOUT PASSWORD PROMPT"
@@ -133,8 +133,8 @@ echo "Install Emoncms update cron entry, every 1 min"
 # Add crontab entry to run wifi check script ever 5min
 crontab -l > mycron #write out current crontab
 # Check crontab entry does not already exist, if not add new entry
-if ! grep -Fxq " * * * * * /home/debian/emonpi/update >> /var/log/emonpiupdate.log 2>&1" mycron ; then
-        echo " * * * * * /home/debian/emonpi/update >> /var/log/emonpiupdate.log 2>&1" >> mycron  #echo new cron into cronfile
+if ! grep -Fxq " 0 0 * * * /home/debian/emonpi/update >> /var/log/emonpiupdate.log 2>&1" mycron ; then
+        echo " 0 0 * * * /home/debian/emonpi/update >> /var/log/emonpiupdate.log 2>&1" >> mycron  #echo new cron into cronfile
         crontab mycron #install new cron file
 fi
 rm mycron

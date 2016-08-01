@@ -17,7 +17,7 @@ import re
 import paho.mqtt.client as mqtt
 
 
-# ------------------------------------------------- 
+# -------------------------------------------------
 #     Config File reader
 # config file emonPiLCD.conf
 
@@ -31,8 +31,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='config file')
 
-parser.add_argument("--config-file", action="store", 
-		     help="path to config file", 
+parser.add_argument("--config-file", action="store",
+		     help="path to config file",
                       default=sys.path[0] +'/emonPiLCD.conf')
 
 args = parser.parse_args()
@@ -45,8 +45,8 @@ fullpath = '/home/debian/emonpi/lcd/emonPiLCD.conf'
 configs = ( )
 
 default = dict(
-    emonPi_nodeID = 10,
-    uselogfile = True,  
+    emonPi_nodeID = 5,
+    uselogfile = True,
     mqtt_rx_channel = 'emonhub/rx/#',
     mqtt_push_channel = 'emonhub/tx/#',
     loghandler_path = '/var/log/emonPiLCD',
@@ -56,7 +56,7 @@ default = dict(
     SHUTDOWN_TIME = 3,
     GPIO_PORT = 'P8_11',
     GPIO_PORT_shutdown = 'P8_12',
-    max_number_pages = 6,
+    max_number_pages = 7,
 
     host = 'localhost',
     port = 6379,
@@ -69,7 +69,7 @@ default = dict(
 def read_config(filename):
     global configs
     err = 0
-    
+
     #configs = ConfigParser.ConfigParser()
     try:
         configs.read( filename)    #config_path)
@@ -93,31 +93,32 @@ def get_config( str ):
     try:
         val = configs.get('emonPiLCD', str)
     except:
-        #print 'no value nor default value, check name or add to default configuration'
+        print 'no value nor default value, check name or add to default configuration'
         return None
 
     val = remove_comments( val )
     try:
-        integer =  int(val)
+        val =  int(val)
     except:
-        #print error
-        integer = val
-    
-    val = integer
+	pass
 
     if val == 'True' or val == 'true':
         val = True
     elif val == 'False' or val == 'false':
         val = False
-    
+
     return val
 
 
 # -----------------------------
 # removes comments on line strings
 def remove_comments(string):
-    arr = string.split()
-    return arr[0]
+    try:
+	    string = string.split()
+    except:
+            string = [string]
+            pass
+    return string[0]
 
 
 # ################################################
@@ -154,13 +155,13 @@ inc = 0
 GPIO_PORT = get_config('GPIO_PORT')    #"P8_11"
 
 #in case we use a button to switch on/off
-GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"  
+GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"
 GPIO.setup( GPIO_PORT,GPIO.IN)
 GPIO.setup( GPIO_PORT_shutdown,GPIO.IN)
 new_switch_state = GPIO.input(GPIO_PORT)
 shutdown_button =GPIO.input(GPIO_PORT_shutdown)
 
-max_number_pages = get_config('max_number_pages')  #6
+max_number_pages = get_config('max_number_pages')  #7
 
 SHUTDOWN_TIME = get_config('SHUTDOWN_TIME')        #3  # Shutdown after 3 second press
 
@@ -187,13 +188,13 @@ else:
 loghandler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
 logger = logging.getLogger("emonPiLCD")
 logger.addHandler(loghandler)
-logger.setLevel(logging.INFO)    # >> config??
+logger.setLevel(logging.DEBUG)    # >> config??
 
 logger.info("emonPiLCD Start")
 
 # ------------------------------------------------------------------------------------
 
-r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') ) 
+r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') )
 # host='localhost', port=6379, db=0)
 
 # We wait here until redis has successfully started up
@@ -216,6 +217,14 @@ class Background(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.stop = False
+	self.set_defaults()
+
+    def set_defaults(self):
+	r.set("server:active", 0)
+	r.set("wlan:active", 0)
+	r.set("eth:active", 0)
+	r.set("ppp:active", 0)
+	r.set("ppp:gsm_signallevel",0)
 
     def run(self):
         last1s = time.time() - 2.0
@@ -226,6 +235,7 @@ class Background(threading.Thread):
         logger.info("Starting background thread")
         # Loop until we stop is false (our exit signal)
 
+	logger.info("Running with configuration %s"%max_number_pages)
         pppactive = 0
         wlanactive = 0
         ethactive = 0
@@ -255,13 +265,15 @@ class Background(threading.Thread):
 
 	# Ethernet
 	# --------------------------------------------------------------------------------
-			eth0 = "ip addr show eth0 | grep inet | awk '{print $2}' | cut -d/ -f1 | head -n1"
+			eth0 = "ip addr show eth0 | grep inet | grep -v inet6 | awk '{print $2}' | cut -d/ -f1 | head -n1"
 			p = Popen(eth0, shell=True, stdout=PIPE)
 			eth0ip = p.communicate()[0][:-1]
 
 			ethactive = 1
+			# Ignore all cases where IPv4 is not there
 			if eth0ip=="" or eth0ip==False:
 			    ethactive = 0
+
 
 			r.set("eth:active",ethactive)
 			r.set("eth:ip",eth0ip)
@@ -422,6 +434,23 @@ def shutdown():
         call('reboot', shell=False)	#
         sys.exit() #end script
 
+def restart_ethernet():
+	"""
+ 	Intiate thernet restart. TODO: move this to monit
+	"""
+	if_down = "ifdown eth0"
+	if_up = "ifup eth0"
+
+	logger.debug("Trying to  restart ethernet")
+	p = Popen(if_down, shell=True, stdout=PIPE)
+	ppp0ip = p.communicate()[0][:-1]
+	time.sleep(10)
+	logger.debug("Trying to renable ethernet")
+	p = Popen(if_up, shell=True, stdout=PIPE)
+	ppp0ip = p.communicate()[0][:-1]
+
+
+
 def get_uptime():
 
     return string
@@ -542,7 +571,7 @@ while 1:
         if backlight == True: page = page + 1
         if page > max_number_pages: page = 0
         buttonPress_time = time.time()
-
+	logger.info("On Page %s of total %s"%(page,max_number_pages))
         #turn backight off afer x seconds
     if (now - buttonPress_time) > backlight_timeout:
         backlight = False
@@ -562,8 +591,7 @@ while 1:
                 lcd_string1 = "Ethernet: YES"
                 lcd_string2 = r.get("eth:ip")
             else:
-                # AT - Removing int casting. not necassary
-                if r.get("wlan:active"):
+                if int(r.get("wlan:active")):
                         page=page+1
                 else:
                         lcd_string1 = "Ethernet:"
@@ -637,7 +665,19 @@ while 1:
                 lcd_string1 = 'Data Sent : ...'
                 lcd_string2 = 'Data Rec. : ...'
              #   print"*******************power 3:....."
-             #   print"********************power 4:......"
+             #   print"********************power 4:......
+
+        elif page==7:
+	    logger.info("On page 7")
+            tx = int(r.get("server:active"))
+
+            if tx is not 0:
+                lcd_string1 = 'Server Com.  '
+                lcd_string2 = 'Established'
+
+            else:
+                lcd_string1 = 'Server Com.  '
+                lcd_string2 = 'Not Established'
 
 
 

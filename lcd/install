@@ -41,13 +41,15 @@ then
         echo "Code line exist"
         crontab -l >tempcrontab.txt
         #sudo echo '@reboot sudo echo BB-I2C1 >> /sys/devices/bone_capemgr.9/slots' >> /root/tempcrontab.txt
-        sudo echo '@reboot sh /home/debian/gprsAndEmonInstall/enable_ttyo4.sh' >> /root/tempcrontab.txt
+        sudo echo '@reboot sh /home/debian/emonpi/gprs/enable_ttyo4.sh' >> /root/tempcrontab.txt
+    sudo echo '@reboot sh /home/debian/emonpi/usb_reset.sh' >> /root/tempcrontab.txt
         crontab tempcrontab.txt
 else
         echo "Adding the code line....."
         crontab -l >tempcrontab.txt
         sudo echo '@reboot sudo echo BB-I2C1 >> /sys/devices/bone_capemgr.9/slots' >> /root/tempcrontab.txt
-        sudo echo '@reboot sh /home/debian/gprsAndEmonInstall/enable_ttyo4.sh' >> /root/tempcrontab.txt
+        sudo echo '@reboot sh /home/debian/emonpi/gprs/enable_ttyo4.sh' >> /root/tempcrontab.txt
+    sudo echo '@reboot sh /home/debian/emonpi/usb_reset.sh' >> /root/tempcrontab.txt
         crontab tempcrontab.txt
 
 fi
@@ -67,14 +69,14 @@ echo 'I2C for LCD is enabled; reboot to take effect'
 echo 'Install emonPi Python LCD install scripts'
 if [ -f /etc/init.d/emonPiLCD ]
 then
-	echo "/etc/init.d/emonPiLCD already exists doing nothing"
+    echo "/etc/init.d/emonPiLCD already exists doing nothing"
 else
-	echo "copying daemon script /etc/init.d/emonPiLCD"
-	sudo cp /home/debian/emonpi/lcd/emonPiLCD /etc/init.d/emonPiLCD
-	echo "updating rc scripts for auto-start"
-	sudo update-rc.d emonPiLCD start
-	echo "updating rc scripts to enable start"
-	sudo update-rc.d emonPiLCD enable
+    echo "copying daemon script /etc/init.d/emonPiLCD"
+    sudo cp /home/debian/emonpi/lcd/emonPiLCD /etc/init.d/emonPiLCD
+    echo "updating rc scripts for auto-start"
+    sudo update-rc.d emonPiLCD start
+    echo "updating rc scripts to enable start"
+    sudo update-rc.d emonPiLCD enable
 fi
 
 
@@ -85,14 +87,14 @@ echo 'I2C LCD installed...please reboot to take effect'
 
 if [ -f /etc/init.d/emonPiLCD ]
 then
-	echo "/etc/init.d/emonPiLCD akready exists doing nothing"
+    echo "/etc/init.d/emonPiLCD akready exists doing nothing"
 else
-	echo "copying daemon script /etc/init.d/emonPiLCD"
-	sudo cp /home/debian/emonpi/lcd/emonPiLCD /etc/init.d/emonPiLCD
-	echo "updating rc scripts for auto-start"
-	sudo update-rc.d emonPiLCD start
-	echo "updating rc scripts to enable start"
-	sudo update-rc.d emonPiLCD enable
+    echo "copying daemon script /etc/init.d/emonPiLCD"
+    sudo cp /home/debian/emonpi/lcd/emonPiLCD /etc/init.d/emonPiLCD
+    echo "updating rc scripts for auto-start"
+    sudo update-rc.d emonPiLCD start
+    echo "updating rc scripts to enable start"
+    sudo update-rc.d emonPiLCD enable
 fi
 echo "Starting LCD script"
 sudo service emonPiLCD start
