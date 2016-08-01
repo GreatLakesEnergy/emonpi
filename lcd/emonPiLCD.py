@@ -217,6 +217,14 @@ class Background(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.stop = False
+	self.set_defaults()
+
+    def set_defaults(self):
+	r.set("server:active", 0)
+	r.set("wlan:active", 0)
+	r.set("eth:active", 0)
+	r.set("ppp:active", 0)
+	r.set("ppp:gsm_signallevel",0)
 
     def run(self):
         last1s = time.time() - 2.0
@@ -582,13 +590,8 @@ while 1:
             if int(r.get("eth:active")):
                 lcd_string1 = "Ethernet: YES"
                 lcd_string2 = r.get("eth:ip")
-            elif int(r.get("eth:active")) == 2:
-		restart_ethernet()
-		logger.warning("Ethernet IP is in IPv6 will try to renew dhcp")
-		r.set("eth:active",0)
             else:
-                # AT - Removing int casting. not necassary
-                if r.get("wlan:active"):
+                if int(r.get("wlan:active")):
                         page=page+1
                 else:
                         lcd_string1 = "Ethernet:"
@@ -665,6 +668,7 @@ while 1:
              #   print"********************power 4:......
 
         elif page==7:
+	    logger.info("On page 7")
             tx = int(r.get("server:active"))
 
             if tx is not 0:
