@@ -17,12 +17,13 @@ class HallSensor {
     float VOFFSET = 0.0;
     
     bool DEBUGGING = 0;
+    bool INVERTED = 0;
     
-    void Initialise( float in_VREF, float in_VOFFSET );
+    void Initialise( float in_VREF, float in_VOFFSET, bool in_INVERTED );
     void Set( int in_Readings, int  in_readingDelay, int in_SampleSize, int in_readingSeparation );
     
-    float get_current(  );
-    float get_reading(  );
+    float get_current( );
+    float get_reading( );
     
     float get_volt(float adc);
     float get_adc(float v);
