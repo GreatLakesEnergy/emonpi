@@ -17,7 +17,6 @@ import re
 import paho.mqtt.client as mqtt
 
 
-# ------------------------------------------------- 
 #     Config File reader
 # config file emonPiLCD.conf
 
@@ -32,7 +31,7 @@ import argparse
 parser = argparse.ArgumentParser(description='config file')
 
 parser.add_argument("--config-file", action="store", 
-		     help="path to config file", 
+		     help="path to config file",
                       default=sys.path[0] +'/emonPiLCD.conf')
 
 args = parser.parse_args()
@@ -45,8 +44,8 @@ fullpath = '/home/debian/emonpi/lcd/emonPiLCD.conf'
 configs = ( )
 
 default = dict(
-    emonPi_nodeID = 10,
-    uselogfile = True,  
+    emonPi_nodeID = 5,
+    uselogfile = True,
     mqtt_rx_channel = 'emonhub/rx/#',
     mqtt_push_channel = 'emonhub/tx/#',
     loghandler_path = '/var/log/emonPiLCD',
@@ -69,7 +68,6 @@ default = dict(
 def read_config(filename):
     global configs
     err = 0
-    
     #configs = ConfigParser.ConfigParser()
     try:
         configs.read( filename)    #config_path)
@@ -102,11 +100,13 @@ def get_config( str ):
     except:
 	pass
     
+
     if val == 'True' or val == 'true':
         val = True
     elif val == 'False' or val == 'false':
         val = False
     
+
     return val
 
 
@@ -217,6 +217,14 @@ class Background(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.stop = False
+	self.set_defaults()
+
+    def set_defaults(self):
+	r.set("server:active", 0)
+	r.set("wlan:active", 0)
+	r.set("eth:active", 0)
+	r.set("ppp:active", 0)
+	r.set("ppp:gsm_signallevel",0)
 
     def run(self):
         last1s = time.time() - 2.0
@@ -586,8 +594,7 @@ while 1:
 		logger.warning("Ethernet IP is in IPv6 will try to renew dhcp")
 		r.set("eth:active",0)
             else:
-                # AT - Removing int casting. not necassary
-                if r.get("wlan:active"):
+                if int(r.get("wlan:active")):
                         page=page+1
                 else:
                         lcd_string1 = "Ethernet:"
@@ -678,6 +685,7 @@ while 1:
             tx = int(r.get("server:active"))
 
             logger.info("server_active1: "+str(tx))
+            tx = int(r.get("server:active"))
             if tx is not 0:
                 lcd_string1 = 'Server Com.  '
                 lcd_string2 = 'Established'
