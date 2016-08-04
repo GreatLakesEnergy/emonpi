@@ -17,7 +17,6 @@ import re
 import paho.mqtt.client as mqtt
 
 
-# -------------------------------------------------
 #     Config File reader
 # config file emonPiLCD.conf
 
@@ -31,7 +30,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='config file')
 
-parser.add_argument("--config-file", action="store",
+parser.add_argument("--config-file", action="store", 
 		     help="path to config file",
                       default=sys.path[0] +'/emonPiLCD.conf')
 
@@ -69,7 +68,6 @@ default = dict(
 def read_config(filename):
     global configs
     err = 0
-
     #configs = ConfigParser.ConfigParser()
     try:
         configs.read( filename)    #config_path)
@@ -101,11 +99,13 @@ def get_config( str ):
         val =  int(val)
     except:
 	pass
+    
 
     if val == 'True' or val == 'true':
         val = True
     elif val == 'False' or val == 'false':
         val = False
+    
 
     return val
 
@@ -116,7 +116,7 @@ def remove_comments(string):
     try:
 	    string = string.split()
     except:
-            string = [string]
+            string = [string] 
             pass
     return string[0]
 
@@ -155,7 +155,7 @@ inc = 0
 GPIO_PORT = get_config('GPIO_PORT')    #"P8_11"
 
 #in case we use a button to switch on/off
-GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"
+GPIO_PORT_shutdown = get_config('GPIO_PORT_shutdown')  #"P8_12"  
 GPIO.setup( GPIO_PORT,GPIO.IN)
 GPIO.setup( GPIO_PORT_shutdown,GPIO.IN)
 new_switch_state = GPIO.input(GPIO_PORT)
@@ -194,7 +194,7 @@ logger.info("emonPiLCD Start")
 
 # ------------------------------------------------------------------------------------
 
-r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') )
+r = redis.Redis( host=get_config('host'), port=get_config('port'), db=get_config('db') ) 
 # host='localhost', port=6379, db=0)
 
 # We wait here until redis has successfully started up
@@ -360,7 +360,7 @@ class Background(threading.Thread):
 			logger.info("background: wlan "+str(signallevel))
 
 			gsm_signallevel = 0
-
+		
 		    if (now - last5h) >= 18000.0:
 			last5h = now
 			if pppactive:
@@ -436,16 +436,16 @@ def shutdown():
 
 def restart_ethernet():
 	"""
- 	Intiate thernet restart. TODO: move this to monit
+ 	Intiate thernet restart. TODO: move this to monit	
 	"""
 	if_down = "ifdown eth0"
 	if_up = "ifup eth0"
 
-	logger.debug("Trying to  restart ethernet")
+	logger.debug("Trying to  restart ethernet")			
 	p = Popen(if_down, shell=True, stdout=PIPE)
 	ppp0ip = p.communicate()[0][:-1]
 	time.sleep(10)
-	logger.debug("Trying to renable ethernet")
+	logger.debug("Trying to renable ethernet")			
 	p = Popen(if_up, shell=True, stdout=PIPE)
 	ppp0ip = p.communicate()[0][:-1]
 
@@ -484,7 +484,6 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split("/")
-    logger.info("MQTT RX: "+msg.topic+" "+msg.payload)
     if int(topic_parts[2])==emonPi_nodeID:
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)
@@ -590,6 +589,10 @@ while 1:
             if int(r.get("eth:active")):
                 lcd_string1 = "Ethernet: YES"
                 lcd_string2 = r.get("eth:ip")
+            elif int(r.get("eth:active")) == 2:
+		restart_ethernet()
+		logger.warning("Ethernet IP is in IPv6 will try to renew dhcp")
+		r.set("eth:active",0)
             else:
                 if int(r.get("wlan:active")):
                         page=page+1
@@ -628,8 +631,12 @@ while 1:
             basedata = r.get("basedata")
             if basedata is not None:
                 basedata = basedata.split(",")
-                lcd_string1 = 'Power 1: '+str(basedata[0])+"W"
-                lcd_string2 = 'Power 2: '+str(basedata[1])+"W"
+		name1, value1, unit1 = basedata[0].split("#")
+		name2, value2, unit2 = basedata[1].split("#")
+
+                #lcd_string1 = 'Power '+str(basedata[0])+"W"
+                lcd_string1 = name1+" :"+value1+unit1
+                lcd_string2 = name2+"   :"+value2+unit2
             else:
                 lcd_string1 = 'Power 1: ...'
                 lcd_string2 = 'Power 2: ...'
@@ -638,10 +645,17 @@ while 1:
             basedata = r.get("basedata")
             if basedata is not None:
                 basedata = basedata.split(",")
-                lcd_string1 = 'Power 3: '+str(basedata[2])+"W"
-                lcd_string2 = 'Power 4: '+str(basedata[3])+"W"
-             #   print"***********************power 3:"
-             #   print"**************************power 4:"
+                name3, value3, unit3 = basedata[2].split("#")
+                name4, value4, unit4 = basedata[3].split("#")
+                
+                lcd_string1 = name3+": "+value3+unit3
+                lcd_string2 = name4+"    : "+value4+unit4
+
+
+                #lcd_string1 = name3": "+value3+"+"W"
+                #lcd_string2 = name2+": "+value2+" W"
+
+
 
             else:
                 lcd_string1 = 'Power 3: ...'
@@ -668,9 +682,10 @@ while 1:
              #   print"********************power 4:......
 
         elif page==7:
-	    logger.info("On page 7")
             tx = int(r.get("server:active"))
 
+            logger.info("server_active1: "+str(tx))
+            tx = int(r.get("server:active"))
             if tx is not 0:
                 lcd_string1 = 'Server Com.  '
                 lcd_string2 = 'Established'
