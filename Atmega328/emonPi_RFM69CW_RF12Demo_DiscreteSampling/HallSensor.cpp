@@ -119,7 +119,7 @@ float HallSensor::get_reading( )
   while(sample_no < SampleSize)
   {
       // ---------------------
-      sensor = analogRead(A5);
+      sensor = analogRead(A6);
       
       average += sensor;
       
