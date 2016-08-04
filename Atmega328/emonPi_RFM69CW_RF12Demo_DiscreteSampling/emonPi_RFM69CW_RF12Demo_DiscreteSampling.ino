@@ -288,9 +288,9 @@ void setup()
    *    - Debugging boolean turns on serial debugging messages of adc value, voltage 
    *      and current translation over serial. This confuses BBB
    */
-  HALL_VREF = 3.266;                // Precise voltage reference for ADC
+  HALL_VREF = 3.315;                // Precise voltage reference for ADC
   HALL_OFFSET = 0;
-  HALL_INVERT = 1;
+  HALL_INVERT = 1;      // INV 1 + inverted curve
   dc_hall.DEBUGGING = 0;            // Boolean for printing Debugging info
   dc_hall.Initialise(HALL_VREF, HALL_OFFSET, HALL_INVERT );   // setup hall sensor measurement variables
   
@@ -490,7 +490,13 @@ void loop()
   // v battery is * 10 with 1 decimal place
   // power thus has a * 1000 multiplier for decimal places, aka mW
   // thus / 100 for 1 decimal places
-  emonPi.DC_power = emonPi.DC_current * emonPi.v_battery_bank / 100;
+  //emonPi.DC_power = emonPi.DC_current * emonPi.v_battery_bank / 100;
+  
+  // DEBUG SEND battery voltage as DC Power
+  emonPi.DC_power = int(  ( FF +365.82) *1000 / 140.74   );
+  
+  //( 140.74 * average ) -365.82;
+  
   
   if(dc_hall.DEBUGGING)
   {

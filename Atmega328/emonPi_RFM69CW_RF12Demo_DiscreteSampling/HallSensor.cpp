@@ -35,11 +35,11 @@ void HallSensor::Initialise( float in_VREF, float in_VOFFSET, bool in_INVERTED )
   VOFFSET = in_VOFFSET;
   INVERTED = in_INVERTED;
   
-  Readings = 3;   
+  Readings = 1;   
   readingDelay = 100;
   
-  SampleSize =  200;
-  readingSeparation = 1;
+  SampleSize =  500;
+  readingSeparation = 2;
 
   CurrentReading = 0;
   
@@ -160,6 +160,9 @@ float HallSensor::get_reading( )
    *  
    */
   average = ( 140.74 * average ) -365.82;
+  //FIXING     - i believe my curve was inverted!
+  //average = ( 140.74 * average * (-1) ) +365.82;
+  
   if(DEBUGGING){
     Serial.print("curr\t");      Serial.println(average);     }
   
