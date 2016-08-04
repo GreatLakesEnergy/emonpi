@@ -50,8 +50,8 @@ EnergyMonitor ct1, ct2, ct3, ct4;
 // -------------------------------------- Hall Sensor for DC current measuring
 #include "HallSensor.h"
 HallSensor dc_hall;
-int HALL_SENSOR_PIN;
 float HALL_VREF, HALL_OFFSET;
+bool HALL_INVERT;
 
 #include <OneWire.h>                                                  // http://www.pjrc.com/teensy/td_libs_OneWire.html
 #include <DallasTemperature.h>                                        // http://download.milesburton.com/Arduino/MaximTemperature/DallasTemperature_LATEST.zip
@@ -143,6 +143,7 @@ int power4;
 //**************************************for DC voltage reading************* 
 int v_battery_bank;  
 int DC_current;
+int DC_power;
 //*************************************************************************                                                 
 int Vrms; 
 int temp[MaxOnewire]; 
@@ -289,9 +290,10 @@ void setup()
    */
   HALL_VREF = 3.266;                // Precise voltage reference for ADC
   HALL_OFFSET = 0;                  
+  HALL_INVERT = 1;
   dc_hall.DEBUGGING = 0;            // Boolean for printing Debugging info
-  dc_hall.Initialise(HALL_VREF, HALL_OFFSET);   // setup hall sensor measurement variables
-  HALL_SENSOR_PIN = 5;        // define hall sensor pin
+  dc_hall.Initialise(HALL_VREF, HALL_OFFSET, HALL_INVERT );   // setup hall sensor measurement variables
+  
   
   
   attachInterrupt(emonPi_int1, onPulse, FALLING);  // Attach pulse counting interrupt on RJ45 (Dig 3 / INT 1) 
@@ -484,6 +486,12 @@ void loop()
   FF = dc_hall.get_current( ) -4.55;    // Sensor C has a constant offset of -4.55 A comapred to calibration for sensor *
   emonPi.DC_current = int(FF * 100);
 
+  // dc current is int. float * 100 for 2 decimal places
+  // v battery is * 10 with 1 decimal place
+  // power thus has a * 1000 multiplier for decimal places, aka mW
+  // thus / 100 for 1 decimal places
+  emonPi.DC_power = emonPi.DC_current * emonPi.v_battery_bank / 100;
+  
   if(dc_hall.DEBUGGING)
   {
     Serial.print("\nF,  ");

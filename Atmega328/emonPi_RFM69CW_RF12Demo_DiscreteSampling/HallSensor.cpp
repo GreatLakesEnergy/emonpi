@@ -24,15 +24,16 @@
  *    
  *  ---- Reading Separation
  *    Delay in between Readings
- *    
+ *  
  */
 
-void HallSensor::Initialise( float in_VREF, float in_VOFFSET ){
+void HallSensor::Initialise( float in_VREF, float in_VOFFSET, bool in_INVERTED ){
   
   analogReference(DEFAULT);   // EXTERNAL
    
   VREF = in_VREF;   //3.283;
   VOFFSET = in_VOFFSET;
+  INVERTED = in_INVERTED;
   
   Readings = 3;   
   readingDelay = 100;
@@ -79,14 +80,14 @@ void HallSensor::Set( int in_Readings, int  in_readingDelay, int in_SampleSize, 
  *  Each reading followed by a delay of _readingDelay ms
  *  
  */
-float HallSensor::get_current(  ) 
+float HallSensor::get_current( ) 
 {
   float result = 0;
   
   // Take X  Readings
   for( int i=0; i< Readings; i++)
   {
-    result += get_reading( );
+    result += get_reading(  );
     // Alternatively put value into array to find Mean or middle value
     //readings[i] = get_reading( PIN);
     //result += readings[i]
@@ -98,6 +99,9 @@ float HallSensor::get_current(  )
   
   CurrentReading = result +VOFFSET;
 
+  if(INVERTED){
+    CurrentReading *= -1;       }
+    
   return CurrentReading;
   
   //last_reading = millis();
