@@ -159,10 +159,10 @@ echo "<?php header('Location: ../emoncms'); ?>" > /var/www/index.php
 echo "Installing Emonhub"
 cd /home/debian/
 git clone -b $BRANCH  https://github.com/GreatLakesEnergy/emonhub.git && emonhub/install
-sudo service emonhub stop
-sudo chown debian:www-data /home/debian/data/emonhub.conf
-sudo chmod 664 /home/debian/data/emonhub.conf
-sudo service emonhub start
+#sudo service emonhub stop
+#sudo chown debian:www-data /home/debian/data/emonhub.conf  
+#sudo chmod 664 /home/debian/data/emonhub.conf
+sudo service emonhub restart
 
 sudo cp /var/www/emoncms/Modules/nodes/emoncms-nodes-service /etc/init.d/
 sudo chmod 755 /etc/init.d/emoncms-nodes-service
