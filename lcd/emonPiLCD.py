@@ -15,7 +15,8 @@ import signal
 import redis
 import re
 import paho.mqtt.client as mqtt
-
+import os, binascii
+from config_downloader import ConfigDownloader
 
 # -------------------------------------------------
 #     Config File reader
@@ -399,7 +400,23 @@ def sigterm_handler(signal, frame):
     background.stop = True;
     sys.exit(0)
 
+def generate_api_key():
+    return  binascii.b2a_hex(os.urandom(3))
 
+def startup_emonhub():
+   monit = "monit restart emonhub"
+   p = Popen(monit, shell=True, stdout=PIPE)
+   ppp0rx = p.communicate()[0]
+
+
+def download_config(api_key):
+
+    emonhub_conf = os.environ.get('EMONHUB_CONFIG','/home/debian/data/emonhub.conf')
+    remote_url = os.environ.get('EMONHUB_CONFIG_URL','http://sesh-dev.westeurope.cloudapp.azure.net')
+
+    d = ConfigDownloader(emonhub_conf, remote_url, api_key)
+    d.download() 
+    return d.save()
 
 def shutdown():
     while (shutdown_button == 1):
@@ -489,6 +506,13 @@ def on_message(client, userdata, msg):
         basedata = msg.payload.split(",")
         r.set("basedata",msg.payload)
 
+def check_config():
+   """
+   check if emonhub config file exists 
+   """
+   return os.path.isfile(os.environ.get('EMONHUB_CONFIG','/home/debian/data/emonhub.conf'))
+
+
 class ButtonInput():
     def __init__(self):
         #GPIO.add_event_detect(GPIO_PORT, GPIO.RISING, callback=self.buttonPress, bouncetime=1000)
@@ -511,6 +535,8 @@ signal.signal(signal.SIGTERM,sigterm_handler)
 
 time.sleep(1.0)
 
+emonhub_enabled = check_config()
+
 lcd_string1 = ""
 lcd_string2 = ""
 
@@ -526,19 +552,34 @@ mqttc.on_message = on_message
 last1s = time.time() - 1.0
 buttonPress_time = time.time()
 
+# Startup sequence
+lcd_string1 = "RMC"
+lcd_string2 = "starting up..."
+
+updatelcd()
+time.sleep(5)
+
+# Init sequence
+if not emonhub_enabled:
+	page = -9999 # hack
+	api_key = os.environ.get('EMONHUB_API_KEY' ,generate_api_key())
+	lcd_string1 = "apikey:"+api_key
+	lcd_string2 = "click when ready"
+	updatelcd()
+
 while 1:
 
     logging.info("Starting main loop")
+    if not emonhub_enabled:
+	    emonhub_enabled = check_config()
 
     if background.is_alive():
        logging.info("thread is still alive")
     else:
        logging,info("thread is dead - needs restart")
+   
 
 
-    #while GPIO.input(GPIO_PORT) == GPIO.LOW:
-    #   time.sleep(0.1)
-    #   logging.info("button not pressed")
 
     # Get the time button was pressed
     button_down_time = time.time()
@@ -568,6 +609,26 @@ while 1:
     mqttc.loop(0)
 
     if buttoninput.pressed:
+	if not emonhub_enabled: # this needs to wait till a connection is established
+		lcd_string1 = "downloading " # wifi, ppp, eth0 or something
+		lcd_string2 = "config.."
+		updatelcd()
+		status = download_config(api_key)
+		# if config downloaded succesfully
+		if not status:
+			lcd_string1 = "failed"
+			lcd_string2 = "..."
+			updatelcd()
+		else:
+			lcd_string1 = "success"
+			lcd_string2 = "..."
+			updatelcd()
+			startup_emonhub()
+
+		emonhub_enabled = status
+		page = 0	
+		
+
         if backlight == True: page = page + 1
         if page > max_number_pages: page = 0
         buttonPress_time = time.time()
