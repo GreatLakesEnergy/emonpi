@@ -4,10 +4,10 @@ import requests
 import codecs
 
 class ConfigDownloader:
-    def __init__(self, config_path, remote_url):
+    def __init__(self, config_path, remote_url, api_key='00000'):
         self.config_path = config_path
         self.remote_url  = remote_url
-        self.api_key     = uuid.uuid4()
+        self.api_key     = api_key
         self.error       = None
         self.response    = None
 
@@ -32,7 +32,10 @@ class ConfigDownloader:
 
     def download(self):
         try:
-          self.response = requests.get(self.remote_url, headers={'X-Api-Key': self.api_key})
+          payload = {'api_key' : self.api_key}
+          self.response = requests.get(self.remote_url, 
+			headers={'X-Api-Key': self.api_key},
+			 params=payload)
           return self.response.status_code == requests.codes.ok
         except Exception as e:
           self.error = e
@@ -51,12 +54,12 @@ class ConfigDownloader:
 
 if __name__ == '__main__':
     import os
-    config_path = os.environ.get('EMONPI_CONFIG', None)
-    remote_url  = os.environ.get('EMONPI_CONFIG_URL', None) or 'https://api.gle.solar/config'
+    config_path = os.environ.get('EMONHUB_CONFIG', None)
+    remote_url  = os.environ.get('EMONHUB_CONFIG_URL', None) or 'https://api.gle.solar/config'
     if config_path == None or remote_url == None:
         print "aborting. please provide a EMONPI_CONFIG path and an EMONPI_CONFIG_URL URL"
         print "EMONPI_CONFIG: %s - EMONPI_CONFIG_URL: %s" % (config_path, remote_url)
         exit()
 
-    ConfigDownloader(config_path, remote_url).run()
+    ConfigDownloader(config_path, remote_url, 'buhita2016').run()
 
