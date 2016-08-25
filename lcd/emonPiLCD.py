@@ -412,11 +412,16 @@ def startup_emonhub():
 def download_config(api_key):
 
     emonhub_conf = os.environ.get('EMONHUB_CONFIG','/home/debian/data/emonhub.conf')
-    remote_url = os.environ.get('EMONHUB_CONFIG_URL','http://sesh-dev.westeurope.cloudapp.azure.net')
+    remote_url = os.environ.get('EMONHUB_CONFIG_URL','http://sesh-dev.westeurope.cloudapp.azure.com:8080/get_rmc_config')
 
+    logger.info("Downloading config file from %s"%remote_url)
     d = ConfigDownloader(emonhub_conf, remote_url, api_key)
-    d.download() 
-    return d.save()
+    if d.download():
+	logger.info("Download succesfull")
+	return d.save()
+    else:
+	logger.info("Download failed %s"%d.error)
+	return False
 
 def shutdown():
     while (shutdown_button == 1):
@@ -559,18 +564,19 @@ updatelcd()
 time.sleep(5)
 
 # Init sequence
-if not emonhub_enabled:
-	page = -9999 # hack
-	api_key = os.environ.get('EMONHUB_API_KEY' ,generate_api_key())
-	lcd_string1 = "apikey:"+api_key
-	lcd_string2 = "click when ready"
-	updatelcd()
+
+api_key = os.environ.get('EMONHUB_API_KEY' ,generate_api_key())
 
 while 1:
 
     logging.info("Starting main loop")
     if not emonhub_enabled:
 	    emonhub_enabled = check_config()
+            page = -9999 # hack
+            lcd_string1 = "apikey:"+api_key
+	    lcd_string2 = "click when ready"
+	    updatelcd()
+
 
     if background.is_alive():
        logging.info("thread is still alive")
@@ -618,6 +624,7 @@ while 1:
 			lcd_string1 = "failed"
 			lcd_string2 = "..."
 			updatelcd()
+			time.sleep(5)
 		else:
 			lcd_string1 = "success"
 			lcd_string2 = "..."
