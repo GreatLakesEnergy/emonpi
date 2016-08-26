@@ -11,6 +11,9 @@ echo
 
 cd /home/debian/emonhub
 git config --global http.sslverify false
+git checkout beaglebone
+git pull origin --tags
+git checkout RELEASE
 git pull origin RELEASE
 pip install -r requirements.txt
 
