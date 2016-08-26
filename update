@@ -19,7 +19,7 @@ cd /home/debian/emonpi
 git config --global http.sslverify false
 git checkout beaglebone
 #update tags
-git pull --tags
+git pull origin --tags
 git checkout RELEASE
 #The RELEASE Tag is updated in pull --tags
 git pull origin RELEASE
