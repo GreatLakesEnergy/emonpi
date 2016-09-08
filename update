@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#if [ ! -f /tmp/emonpiupdate ]; then
-#    exit
-#fi
-
 LOCK=/tmp/updatelock
 if [ -f $LOCK ]; then
   echo Job is already running\!
@@ -15,16 +11,29 @@ touch $LOCK
 
 cat /dev/null >  /var/log/emonpiupdate.log 
 
-cd /home/debian/emonpi
+cd /home/debian/emonpi/Atmega328/emonPi_RFM69CW_RF12Demo_DiscreteSampling
 git config --global http.sslverify false
-git checkout beaglebone
-#update tags
-git pull origin --tags
-git checkout RELEASE
-#The RELEASE Tag is updated in pull --tags
-git pull origin RELEASE
+old_checksum=`md5sum.exe emonPi_RFM69CW_RF12Demo_DiscreteSampling.cpp.hex | awk '{ print $1 }'`
 
-/home/debian/emonpi/emonpiupdate
+#update tags
+git checkout RELEASE
+
+
+git pull origin RELEASE 2>&1 | grep "Already up-to-date."
+
+new_checksum=`md5sum.exe emonPi_RFM69CW_RF12Demo_DiscreteSampling.cpp.hex | awk '{ print $1 }'`
+
+if [[ ! $? -eq 1 && ! $init ]]; then
+        echo 'The local repo is Updated, do nothing'
+else
+
+	if [ "$old_checksum" -ne "$new_checksum" ]; then
+        	echo 'There is update, Updating emontx firmware!'
+		/home/debian/emonpi/emonpiupdate
+	fi
+
+fi
+
 /home/debian/emonpi/emoncmsupdate
 
 sudo rm /tmp/emonpiupdate
