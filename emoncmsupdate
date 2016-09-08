@@ -11,15 +11,17 @@ echo
 
 cd /home/debian/emonhub
 git config --global http.sslverify false
-git checkout beaglebone
-git pull origin --tags
 git checkout RELEASE
-git pull origin RELEASE
-pip install -r requirements.txt
+git pull origin RELEASE 2>&1 | grep "Already up-to-date."
 
-sudo service emonhub restart
-
-sudo service emonPiLCD restart
+if [[ ! $? -eq 1 && ! $init ]]; then
+        echo 'Already updated, do nothing'
+else
+	echo "installing updates"
+	pip install -r requirements.txt
+	sudo service emonhub restart
+	sudo service emonPiLCD restart
+fi
 
 echo
 echo "Emonhub update finished"
