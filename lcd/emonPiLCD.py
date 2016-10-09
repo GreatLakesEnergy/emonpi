@@ -224,6 +224,7 @@ class Background(threading.Thread):
 	r.set("server:active", 0)
 	r.set("wlan:active", 0)
 	r.set("eth:active", 0)
+	r.set("eth1:active", 0)
 	r.set("ppp:active", 0)
 	r.set("ppp:gsm_signallevel",0)
 
@@ -279,6 +280,22 @@ class Background(threading.Thread):
 			r.set("eth:active",ethactive)
 			r.set("eth:ip",eth0ip)
 			logger.info("background: eth:"+str(int(ethactive))+" "+eth0ip)
+        # Modem
+        # --------------------------------------------------------------------------------
+                        eth1 = "ip addr show eth1 | grep inet | grep -v inet6 | awk '{print $2}' | cut -d/ -f1 | head -n1"
+                        p = Popen(eth1, shell=True, stdout=PIPE)
+                        eth1ip = p.communicate()[0][:-1]
+
+                        eth1active = 1
+                        # Ignore all cases where IPv4 is not there
+                        if eth1ip=="" or eth1ip==False:
+                            eth1active = 0
+
+
+                        r.set("eth1:active",eth1active)
+                        r.set("eth1:ip",eth1ip)
+                        logger.info("background: eth1:"+str(int(eth1active))+" "+eth1ip)
+
 
 	   # GPRS data sent counter
 	   # ----------------------------------------------------------------------------------
@@ -309,6 +326,43 @@ class Background(threading.Thread):
                            data_counter_init = True
 		    if (now - last100s) >= 100.0:
 			last100s = now
+
+
+
+
+           # Modem data sent counter
+           # ----------------------------------------------------------------------------------
+                        if eth1active:
+
+                           eth1 = "ifconfig eth1 | grep -oP '(?<=TX bytes:)[0-9]*'"
+                           p = Popen(eth1, shell=True, stdout=PIPE)
+                           eth1tx = p.communicate()[0]
+
+                           oldtx = r.get("eth1:old_tx")
+                           oldrx = r.get("eth1:old_rx")
+
+                           eth1 = "ifconfig eth1 | grep -oP '(?<=RX bytes:)[0-9]*'"
+                           p = Popen(eth1, shell=True, stdout=PIPE)
+                           eth1rx = p.communicate()[0]
+
+                           if oldtx and oldrx:
+                              oldtx = int(oldtx)
+                              oldrx = int(oldrx)
+                              eth1tx = oldtx + int(eth1tx)
+                              eth1rx = oldrx + int(eth1rx)
+
+
+                           r.set("eth1:tx",eth1tx)
+                           r.set("eth1:rx",eth1rx)
+                           logger.info("background: eth1 data tx:"+str(eth1tx))
+                           logger.info("background: eth1 data rx:"+str(eth1rx))
+                           data_counter_init = True
+                    if (now - last100s) >= 100.0:
+                        last100s = now
+
+
+
+
 
 	# Wireless LAN
 	# ----------------------------------------------------------------------------------
@@ -667,9 +721,24 @@ while 1:
                 else:
                         lcd_string1 = "Ethernet:"
                         lcd_string2 = "NOT CONNECTED"
-
-
         elif page==1:
+            if int(r.get("eth1:active")):
+                lcd_string1 = "Modem: YES"
+                lcd_string2 = r.get("eth1:ip")
+            elif int(r.get("eth1:active")) == 2:
+                restart_modem()
+                logger.warning("Modem IP is in IPv6 will try to renew dhcp")
+                r.set("eth1:active",0)
+            else:
+                if int(r.get("wlan:active")):
+                        page=page+1
+                else:
+                        lcd_string1 = "Modem:"
+                        lcd_string2 = "NOT CONNECTED"
+
+
+
+        elif page==2:
             if int(r.get("wlan:active")):
                 lcd_string1 = "WIFI: YES  "+str(r.get("wlan:signallevel"))+"%"
                 lcd_string2 = r.get("wlan:ip")
@@ -677,7 +746,7 @@ while 1:
                 lcd_string1 = "WIFI:"
                 lcd_string2 = "NOT CONNECTED"
 
-        elif page==2:
+        elif page==3:
                 if int(r.get("ppp:active")):
 			lcd_string1 = "GSM: YES - "+r.get("ppp:gsm_signallevel")+"%"
 			lcd_string2 = r.get("ppp:ip")
@@ -691,11 +760,11 @@ while 1:
                 #print"****************NOT CONNECTED"
 
 
-        elif page==3:
+        elif page==4:
 		    lcd_string1 = datetime.now().strftime('%b %d %H:%M')
 		    lcd_string2 =  'Uptime %.2f days' % (float(r.get("uptime"))/86400)
 
-        elif page==4:
+        elif page==5:
             basedata = r.get("basedata")
             if basedata is not None:
                 basedata = basedata.split(",")
@@ -709,7 +778,7 @@ while 1:
                 lcd_string1 = 'Power 1: ...'
                 lcd_string2 = 'Power 2: ...'
 
-        elif page==5:
+        elif page==6:
             basedata = r.get("basedata")
             if basedata is not None:
                 basedata = basedata.split(",")
@@ -731,9 +800,11 @@ while 1:
              #   print"*******************power 3:....."
              #   print"********************power 4:......"
 
-        elif page==6:
-            tx = r.get("ppp:tx")
-            rx = r.get("ppp:rx")
+        elif page==7:
+            tx = r.get("eth1:tx") or r.get("ppp:tx")
+
+            rx = r.get("eth1:rx") or r.get("ppp:rx")
+
 
             if tx and rx is not None:
 		tx = int (tx)/1024
@@ -749,7 +820,7 @@ while 1:
              #   print"*******************power 3:....."
              #   print"********************power 4:......
 
-        elif page==7:
+        elif page==8:
             tx = int(r.get("server:active"))
 
             logger.info("server_active1: "+str(tx))

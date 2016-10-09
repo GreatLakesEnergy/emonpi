@@ -68,6 +68,9 @@ fi
 
 cp /home/debian/emonpi/gprs/gprs_signal.py /home/debian/emonpi/lcd/ 
 
+#enable 3G modem to auto connect on boot
+sudo echo "allow-hotplug eth1" >> /etc/network/interfaces
+sudo echo "iface eth1 inet dhcp" >> /etc/network/interfaces
 
 stty -F /dev/ttyO2 9600
 
